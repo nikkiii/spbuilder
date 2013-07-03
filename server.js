@@ -15,6 +15,7 @@ http.createServer(function (req, res) {
 		
 		parsePush(data);
 		
+		// This is just dummy data to keep github's request happy
 		res.writeHead(200, {'Content-Type': 'text/plain'});
 		res.end('Text');
 	});
@@ -76,11 +77,12 @@ function build(repo, files) {
 		
 		var name = f.substring(f.lastIndexOf('/')+1, f.lastIndexOf('.'));
 		
+		var sourceDir = repoPath + '/' + f.substring(0, f.lastIndexOf('/'));
 		var sourcePath = repoPath + '/' + f;
 		var compiledPath = repoPath + '/plugins/' + name + '.smx';
 		
 		if(fs.existsSync(sourcePath)) {
-			compile(repoPath + '/' + f, compiledPath, function(res) {
+			compile(sourceDir, repoPath + '/' + f, compiledPath, function(res) {
 				compiled.push(res);
 				done++;
 				if(done >= totalFiles) {
@@ -93,9 +95,13 @@ function build(repo, files) {
 	}
 }
 
-function compile(sourceFile, outFile, callback) {
+function compile(sourcePath, sourceFile, outFile, callback) {
 	console.log('Compiling ' + sourceFile + ' to ' + outFile + '...');
-	var comp = spawn('/build/executables/sourcemod/spcomp', [sourceFile, '-o' + outFile]);
+	var args = [sourceFile, '-o' + outFile];
+	if(fs.existsSync(sourcePath + '/include')) {
+		args.push('-i' + sourcePath + '/include');
+	}
+	var comp = spawn('/build/executables/sourcemod/spcomp', args);
 	comp.stdout.on('data', function (data) {
 	  console.log('' + data);
 	});
